@@ -1,3 +1,7 @@
 {
-    "azure-pipelines.1ESPipelineTemplatesSchemaFile": true
+    "azure-pipelines.1ESPipelineTemplatesSchemaFile": true,
+    "cmake.sourceDirectory": "C:/Users/Peter/Desktop/theme-converter-for-vs/ThemeConverterCpp",
+    "files.associations": {
+        "string_view": "cpp"
+    }
 }

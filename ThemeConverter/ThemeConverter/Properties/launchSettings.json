@@ -2,7 +2,7 @@
   "profiles": {
     "ThemeConverter": {
       "commandName": "Project",
-      "commandLineArgs": ""
+      "commandLineArgs": "-i \"C:\\Users\\Peter\\Desktop\\cursortheme.jsonc\" -t \"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\""
     }
   }
 }
