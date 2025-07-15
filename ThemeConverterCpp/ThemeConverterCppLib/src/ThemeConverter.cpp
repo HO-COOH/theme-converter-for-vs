@@ -4,6 +4,8 @@
 #include <nlohmann/json.hpp>
 #include <iterator>
 #include <fstream>
+#include "VSCode/Theme.h"
+#include <boost/uuid.hpp>
 
 namespace ThemeConverterCppLib 
 {
@@ -14,9 +16,13 @@ namespace ThemeConverterCppLib
             throw InvalidInputFileError{};
         
         std::ifstream inputFile{inputPath};
-        auto themeJson = nlohmann::json::parse(
+        VSCode::Theme theme{nlohmann::json::parse(
             std::string{std::istreambuf_iterator<char>{inputFile}, std::istreambuf_iterator<char>{}}
-        );
+        )};
+
+        std::ofstream outputFile{output.data()};
+        outputFile << "<Themes>\n";
+
     }
     void ShowHelp()
     {
