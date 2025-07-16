@@ -19,6 +19,8 @@ namespace ThemeConverterCppLib::VSCode
                 nlohmann::json const& m_json;
             public:
                 Settings_(nlohmann::json const& value);
+                std::string Foreground() const;
+                std::string Background() const;
             };
             TokenColors_(nlohmann::json const& value);
         };
@@ -44,6 +46,8 @@ namespace ThemeConverterCppLib::VSCode
             Light
         };
         Theme(nlohmann::json&& value);
+
+        Type_ Type() const;
         std::string Name() const;
         Colors_ Colors() const;
         bool SemanticHighlighting() const;

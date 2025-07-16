@@ -13,7 +13,7 @@ add_library(${LIB_NAME} STATIC ${SOURCES} ${HEADERS})
 
 # Set include directories
 set(BOOST_ENABLE_CMAKE ON)
-set(BOOST_INCLUDE_LIBRARIES uuid)
+set(BOOST_INCLUDE_LIBRARIES uuid algorithm)
 include(FetchContent)
 FetchContent_Declare(
     json
@@ -24,7 +24,7 @@ FetchContent_Declare(
 FetchContent_Declare(
     Boost
     GIT_REPOSITORY https://github.com/boostorg/boost.git
-    GIT_TAG boost-1.86.0
+    GIT_TAG boost-1.88.0
     GIT_PROGRESS ON
 )
 FetchContent_MakeAvailable(json)
@@ -39,10 +39,11 @@ target_link_libraries(${LIB_NAME}
     PRIVATE
         nlohmann_json::nlohmann_json
         Boost::uuid
+        Boost::algorithm
 )
 
 # Set library properties
 set_target_properties(${LIB_NAME} PROPERTIES
-    CXX_STANDARD 17
+    CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
 ) 

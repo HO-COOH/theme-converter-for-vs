@@ -1,5 +1,4 @@
 #include "VSCode/Theme.h"
-#include "Theme.h"
 
 namespace ThemeConverterCppLib::VSCode
 {
@@ -43,5 +42,8 @@ namespace ThemeConverterCppLib::VSCode
     {
     }
 
-    
+    Theme::Type_ Theme::Type() const
+    {
+        return Type_::Dark;    
+    }
 }
