@@ -6,6 +6,10 @@ Here's a quick overview on how the Theme Converter works:
 
 Our community of authors have already converted a handful of VS Code themes to work in Visual Studio. [Feel free to take a look here](https://aka.ms/vsthemes).
  
+ ## Current progress
+ This project is currently being rewritten to a C++ static library called `ThemeConverterCpp`, which I hopes to bring easier integration
+ into not only a Visual Studio extension, but also standalone tools.
+
  ## Prerequisites
  1. VS Code
  2. [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/)
