@@ -1,14 +1,26 @@
 #include "VSCode/Theme.h"
+#include <fstream>
+#include <iterator>
 
 namespace ThemeConverterCppLib::VSCode
 {
+    Theme::Theme(std::ifstream&& inputFile) : Theme{
+        nlohmann::json::parse(
+            std::string{std::istreambuf_iterator<char>{inputFile}, std::istreambuf_iterator<char>{}}
+        )
+    }
+    {
+    }
+
     Theme::Theme(nlohmann::json&& value) : m_json{std::move(value)}
     {
     }
 
-    std::string Theme::Name() const
+    std::optional<std::string> Theme::Name() const
     {
-        return m_json["name"];
+        if (auto iter = m_json.find("name"); iter != m_json.end())
+            return iter->get<std::string>();
+        return {};
     }
 
     Theme::Colors_ Theme::Colors() const
@@ -30,8 +42,27 @@ namespace ThemeConverterCppLib::VSCode
     {
     }
 
+   Theme::TokenColors_::operator bool() const
+   {
+        return !m_json.is_null() && !m_json.empty();
+   }
+
     Theme::TokenColors_::Settings_::Settings_(nlohmann::json const& value) : m_json{value}
     {
+    }
+
+    std::optional<std::string> Theme::TokenColors_::Settings_::Foreground() const
+    {
+        if (auto iter = m_json.find("foreground"); iter != m_json.end())
+            return iter->get<std::string>();
+        return {};
+    }
+
+    std::optional<std::string> Theme::TokenColors_::Settings_::Background() const
+    {
+        if (auto iter = m_json.find("background"); iter != m_json.end())
+            return iter->get<std::string>();
+        return {};
     }
 
     Theme::Colors_::Colors_(nlohmann::json const& value) : m_json{value}

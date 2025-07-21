@@ -5,6 +5,6 @@
 
 int main()
 {
-    ThemeConverterCppLib::Convert("a", "b");
+    ThemeConverterCppLib::Convert(R"(C:\Users\Peter\Desktop\cursortheme.jsonc)", R"(C:\Users\Peter\Desktop\test.vstheme)");
     return 0;
 }

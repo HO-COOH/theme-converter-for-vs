@@ -19,10 +19,16 @@ namespace ThemeConverterCppLib::VSCode
                 nlohmann::json const& m_json;
             public:
                 Settings_(nlohmann::json const& value);
-                std::string Foreground() const;
-                std::string Background() const;
+                std::optional<std::string> Foreground() const;
+                std::optional<std::string> Background() const;
             };
             TokenColors_(nlohmann::json const& value);
+
+            operator bool() const;
+
+            auto begin() const { return m_json.begin(); }
+
+            auto end() const { return m_json.end(); }
         };
 
         class Colors_
@@ -46,9 +52,10 @@ namespace ThemeConverterCppLib::VSCode
             Light
         };
         Theme(nlohmann::json&& value);
+        Theme(std::ifstream&& file);
 
         Type_ Type() const;
-        std::string Name() const;
+        std::optional<std::string> Name() const;
         Colors_ Colors() const;
         bool SemanticHighlighting() const;
         TokenColors_ TokenColors() const;

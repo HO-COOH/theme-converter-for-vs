@@ -18,7 +18,7 @@ include(FetchContent)
 FetchContent_Declare(
     json
     GIT_REPOSITORY https://github.com/nlohmann/json
-    GIT_TAG v3.12.0
+    GIT_TAG develop
     GIT_PROGRESS ON
 )
 FetchContent_Declare(
@@ -27,8 +27,14 @@ FetchContent_Declare(
     GIT_TAG boost-1.88.0
     GIT_PROGRESS ON
 )
-FetchContent_MakeAvailable(json)
-FetchContent_MakeAvailable(Boost)
+FetchContent_Declare(
+    ConstexprGuid
+    GIT_REPOSITORY https://github.com/HO-COOH/constexpr-GUID-cpp-11
+    GIT_PROGRESS ON
+)
+FetchContent_MakeAvailable(json Boost ConstexprGuid)
+add_library(ConstexprGuidLib INTERFACE)
+target_include_directories(ConstexprGuidLib INTERFACE ${constexprguid_SOURCE_DIR})
 
 target_include_directories(${LIB_NAME} 
     PUBLIC 
@@ -40,6 +46,7 @@ target_link_libraries(${LIB_NAME}
         nlohmann_json::nlohmann_json
         Boost::uuid
         Boost::algorithm
+        ConstexprGuidLib
 )
 
 # Set library properties
