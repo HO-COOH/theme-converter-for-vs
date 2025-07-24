@@ -12,7 +12,7 @@ namespace ThemeConverterCppLib::VSCode
     {
     }
 
-    Theme::Theme(nlohmann::json&& value) : m_json{std::move(value)}
+    Theme::Theme(nlohmann::json&& value) : m_json(std::move(value))
     {
     }
 
@@ -43,22 +43,36 @@ namespace ThemeConverterCppLib::VSCode
     }
 
    Theme::TokenColors_::operator bool() const
-   {
+    {
         return !m_json.is_null() && !m_json.empty();
-   }
+    }
 
-    Theme::TokenColors_::Settings_::Settings_(nlohmann::json const& value) : m_json{value}
+    Theme::TokenColors_::TokenColor_::TokenColor_(nlohmann::json const& json) : m_json{json}
     {
     }
 
-    std::optional<std::string> Theme::TokenColors_::Settings_::Foreground() const
+    Theme::TokenColors_::TokenColor_::Settings_ Theme::TokenColors_::TokenColor_::Settings()
+    {
+        return Settings_{m_json["settings"]};
+    }
+   
+    Theme::TokenColors_::TokenColor_::Scope_ Theme::TokenColors_::TokenColor_::Scope()
+    {
+        return Scope_{m_json["scope"]};
+    }
+
+    Theme::TokenColors_::TokenColor_::Settings_::Settings_(nlohmann::json const& value) : m_json{value}
+    {
+    }
+
+    std::optional<std::string> Theme::TokenColors_::TokenColor_::Settings_::Foreground() const
     {
         if (auto iter = m_json.find("foreground"); iter != m_json.end())
             return iter->get<std::string>();
         return {};
     }
 
-    std::optional<std::string> Theme::TokenColors_::Settings_::Background() const
+    std::optional<std::string> Theme::TokenColors_::TokenColor_::Settings_::Background() const
     {
         if (auto iter = m_json.find("background"); iter != m_json.end())
             return iter->get<std::string>();

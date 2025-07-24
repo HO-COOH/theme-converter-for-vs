@@ -89,7 +89,7 @@ namespace ThemeConverterCppLib
         for (auto&& color : file["tokenColors"])
         {
             std::vector<ColorKey> values;
-            for(auto&& vsToken : color["VSC Token"])
+            for(auto&& vsToken : color["VS Token"])
             {
                 std::vector<std::string> colorKey;
                 boost::algorithm::split(colorKey, vsToken.get<std::string>(), [](char c){return c == '&';});
@@ -133,11 +133,40 @@ namespace ThemeConverterCppLib
         return scopeMappings;
     }
 
-    static std::unordered_map<std::string, std::unordered_map<std::string, VSCode::Theme::TokenColors_::Settings_>> groupColorsByCategory(
+    static void assignEditorColors(
+        std::vector<ColorKey> colorKeys,
+        std::string const& scope,
+        VSCode::Theme::TokenColors_::TokenColor_& ruleContract,
+        std::unordered_map<std::string, std::unordered_map<std::string, VSCode::Theme::TokenColors_::TokenColor_::Settings_>>& colorCategories,
+        std::unordered_map<std::string, std::unordered_map<std::string, std::string>>& assignBy
+    )
+    {
+        for(auto const& colorKey : colorKeys)
+        {
+            auto ruleList = colorCategories.try_emplace(colorKey.categoryName).first; //iterator to <string, map>
+            auto assignList = assignBy.try_emplace(colorKey.categoryName).first;
+            if(auto iter = ruleList->second.find(colorKey.keyName); iter != ruleList->second.end())
+            {
+                if(scope.starts_with(assignList->second[colorKey.keyName]) && ruleContract.Settings().Foreground())
+                {
+                    //ruleList->second[colorKey.keyName] = ruleContract.Settings();
+                    std::construct_at(std::addressof(iter->second), ruleContract.Settings());
+                    assignList->second[colorKey.keyName] = scope;
+                }
+            }
+            else
+            {
+                ruleList->second.insert({colorKey.keyName, ruleContract.Settings()});
+                assignList->second.insert({colorKey.keyName, scope});
+            }
+        }
+    }
+
+    static std::unordered_map<std::string, std::unordered_map<std::string, VSCode::Theme::TokenColors_::TokenColor_::Settings_>> groupColorsByCategory(
         VSCode::Theme const& themeFile
     ) 
     {
-        std::unordered_map<std::string, std::unordered_map<std::string, VSCode::Theme::TokenColors_::Settings_>> colorCategories;
+        std::unordered_map<std::string, std::unordered_map<std::string, VSCode::Theme::TokenColors_::TokenColor_::Settings_>> colorCategories;
         std::unordered_map<std::string, std::unordered_map<std::string, std::string>> assignBy;
         std::unordered_map<std::string, bool> keyUsed;
         auto scopeMappings = createScopeMapping();
@@ -148,7 +177,31 @@ namespace ThemeConverterCppLib
         {
             for(auto&& ruleContract : tokenColors)
             {
-
+                for(auto&& scopeName : ruleContract.Scope())
+                {
+                    for(auto iter = boost::make_split_iterator(scopeName, boost::token_finder(boost::is_any_of(","))); !iter.eof(); ++iter)
+                    {
+                        auto&& range = *iter;
+                        std::string scope{range.begin(), range.end()};
+                        boost::trim(scope);
+                        
+                        for (auto&& [key, colorKeys] : scopeMappings)
+                        {
+                            if(!scope.empty() && key.starts_with(scope))
+                            {
+                                keyUsed[key] = true;
+                                assignEditorColors(
+                                    colorKeys,
+                                    scope,
+                                    ruleContract,
+                                    colorCategories,
+                                    assignBy
+                                );
+                            }
+                        }
+                        
+                    }
+                }
             }
         }
         return colorCategories;
