@@ -20,11 +20,14 @@ namespace ThemeConverterCppLib::VSCode
             public:
                 class Settings_
                 {
-                    nlohmann::json const& m_json;
+                    nlohmann::json m_json;
                 public:
-                    Settings_(nlohmann::json const& value);
+                    Settings_(nlohmann::json value);
+                    Settings_() = default;
                     std::optional<std::string> Foreground() const;
                     std::optional<std::string> Background() const;
+                    void Foreground(std::string_view value);
+                    void Background(std::string_view value);
                 };
 
                 class Scope_
@@ -94,13 +97,14 @@ namespace ThemeConverterCppLib::VSCode
         public:
             Colors_(nlohmann::json const& value);
 
-            class Color
-            {
-                nlohmann::json const& m_json;
-            public:
-                Color(nlohmann::json const& value);
-            };
-            Color operator[](std::string_view name) const;
+            auto const& Get() const {return m_json;}
+            // class Color
+            // {
+            //     nlohmann::json const& m_json;
+            // public:
+            //     Color(nlohmann::json const& value);
+            // };
+            // Color operator[](std::string_view name) const;
         };
 
         enum class Type_

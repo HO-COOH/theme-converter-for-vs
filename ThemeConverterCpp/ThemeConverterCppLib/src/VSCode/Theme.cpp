@@ -61,8 +61,18 @@ namespace ThemeConverterCppLib::VSCode
         return Scope_{m_json["scope"]};
     }
 
-    Theme::TokenColors_::TokenColor_::Settings_::Settings_(nlohmann::json const& value) : m_json{value}
+    Theme::TokenColors_::TokenColor_::Settings_::Settings_(nlohmann::json value) : m_json{std::move(value)}
     {
+    }
+
+    void Theme::TokenColors_::TokenColor_::Settings_::Foreground(std::string_view value)
+    {
+        m_json["foreground"] = value;
+    }
+
+    void Theme::TokenColors_::TokenColor_::Settings_::Background(std::string_view value)
+    {
+        m_json["background"] = value;
     }
 
     std::optional<std::string> Theme::TokenColors_::TokenColor_::Settings_::Foreground() const
@@ -83,9 +93,9 @@ namespace ThemeConverterCppLib::VSCode
     {
     }
 
-    Theme::Colors_::Color::Color(nlohmann::json const& value) : m_json{value}
-    {
-    }
+    // Theme::Colors_::Color::Color(nlohmann::json const& value) : m_json{value}
+    // {
+    // }
 
     Theme::Type_ Theme::Type() const
     {

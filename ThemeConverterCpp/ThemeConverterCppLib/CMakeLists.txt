@@ -51,6 +51,6 @@ target_link_libraries(${LIB_NAME}
 
 # Set library properties
 set_target_properties(${LIB_NAME} PROPERTIES
-    CXX_STANDARD 20
+    CXX_STANDARD 23
     CXX_STANDARD_REQUIRED ON
 ) 

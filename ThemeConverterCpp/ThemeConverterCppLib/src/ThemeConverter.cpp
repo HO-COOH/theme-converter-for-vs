@@ -10,8 +10,10 @@
 #include <boost/algorithm/string.hpp>
 #include <unordered_map>
 #include "VSCode/TokenMapping.h"
+#include "VSCode/TokenFallback.h"
 #include "VS/VSTokens.h"
 #include <uuid_parse.hpp>
+#include "ColorUtils.h"
 
 using namespace guid_parse::literals;
 
@@ -133,6 +135,17 @@ namespace ThemeConverterCppLib
         return scopeMappings;
     }
 
+    static std::unordered_map<std::string, std::string> createVSCTokenFallback()
+    {
+        std::unordered_map<std::string, std::string> ret;
+        auto file = nlohmann::json::parse(VSCode::TokenFallback);
+        for(auto&& item : file.items())
+        {
+            ret.insert({item.key(), item.value()});
+        }
+        return ret;
+    }
+
     static void assignEditorColors(
         std::vector<ColorKey> colorKeys,
         std::string const& scope,
@@ -149,7 +162,6 @@ namespace ThemeConverterCppLib
             {
                 if(scope.starts_with(assignList->second[colorKey.keyName]) && ruleContract.Settings().Foreground())
                 {
-                    //ruleList->second[colorKey.keyName] = ruleContract.Settings();
                     std::construct_at(std::addressof(iter->second), ruleContract.Settings());
                     assignList->second[colorKey.keyName] = scope;
                 }
@@ -162,16 +174,85 @@ namespace ThemeConverterCppLib
         }
     }
 
+    static auto tryGetValue(auto&& key, auto&& map)
+    {
+        auto iter = map.find(key);
+        return iter != map.end()? &iter->second : nullptr;
+    }
+
+    template<typename T>
+    static auto tryGetValueJson(auto const& key, nlohmann::json const& json)
+    {
+        auto iter = json.find(key);
+        return iter != json.end()? std::optional{iter->get<T>()} : std::nullopt;
+    }
+
+    static auto vscTokenFallback = createVSCTokenFallback();
+
+    std::optional<std::string> tryGetColorValue(VSCode::Theme::Colors_ const& themeColors, std::string_view token)
+    {
+        auto colorValue = tryGetValueJson<std::string>(token, themeColors.Get());
+        
+        std::string key{token};
+        while(colorValue)
+        {
+            if(auto fallbackToken = tryGetValue(key, vscTokenFallback))
+            {
+                key = std::move(*fallbackToken);
+                colorValue = tryGetValueJson<std::string>(key, themeColors.Get());
+            }
+            else
+                break;
+        }
+
+        return colorValue;
+    }
+
+    static void assignShellColor(
+        VSCode::Theme const& theme,
+        std::string colorValue,
+        std::vector<ColorKey> colorKeys,
+        std::unordered_map<std::string, std::unordered_map<std::string, VSCode::Theme::TokenColors_::TokenColor_::Settings_>>& colorCategories
+    )
+    {
+        auto const& themeColors = theme.Colors();
+        for(auto const& colorKey : colorKeys)
+        {
+            if(colorKey.foregroundOpacity && colorKey.vscBackground)
+            {
+                if(auto backgroundColor = tryGetColorValue(themeColors, *colorKey.vscBackground))
+                    colorValue = GetCompoundColor(colorValue, *backgroundColor, 1, *colorKey.foregroundOpacity);
+            }
+
+            auto rulesList = tryGetValue(colorKey.categoryName, colorCategories);
+            if(!rulesList)
+                rulesList = &(colorCategories.insert({colorKey.categoryName, std::unordered_map<std::string, VSCode::Theme::TokenColors_::TokenColor_::Settings_>{}}).first->second);
+            auto colorSettings = tryGetValue(colorKey.keyName, *rulesList);
+            if(!colorSettings)
+                colorSettings = &(rulesList->insert({colorKey.keyName, VSCode::Theme::TokenColors_::TokenColor_::Settings_{}}).first->second);
+            if(colorKey.isBackground)
+                colorSettings->Background(colorValue);
+            else
+                colorSettings->Foreground(colorValue);
+        }
+    }
+
     static std::unordered_map<std::string, std::unordered_map<std::string, VSCode::Theme::TokenColors_::TokenColor_::Settings_>> groupColorsByCategory(
         VSCode::Theme const& themeFile
     ) 
     {
         std::unordered_map<std::string, std::unordered_map<std::string, VSCode::Theme::TokenColors_::TokenColor_::Settings_>> colorCategories;
         std::unordered_map<std::string, std::unordered_map<std::string, std::string>> assignBy;
-        std::unordered_map<std::string, bool> keyUsed;
+
         auto scopeMappings = createScopeMapping();
-        for(auto&& [key, _] : scopeMappings)
-            keyUsed[key] = false;
+
+        std::unordered_map<std::string_view, bool> keyUsed;
+        keyUsed.reserve(scopeMappings.size());
+        keyUsed.insert_range(scopeMappings | std::views::transform([](auto&& mapping)
+        {
+            return std::pair{std::string_view{mapping.first}, false};
+        }));
+
 
         if(auto tokenColors = themeFile.TokenColors())
         {
@@ -204,34 +285,30 @@ namespace ThemeConverterCppLib
                 }
             }
         }
-        return colorCategories;
-    }
-
-    static std::string reviseColor(std::string const& color)
-    {
-        std::string_view revisedColor = color[0] == '#'? std::string_view{color}.substr(1) : std::string_view{color};
-        switch (revisedColor.size())
+        
+        auto colors = themeFile.Colors();
+        for(auto&& [key, used] : keyUsed)
         {
-            case 3:
-                return std::format("FF{0}{0}{1}{1}{2}{2}", 
-                    revisedColor.substr(0, 1),
-                    revisedColor.substr(1, 1),
-                    revisedColor.substr(2, 1)
-                );
-            case 4:
-                return std::format("{0}{0}{1}{1}{2}{2}{3}{3}",
-                    revisedColor.substr(0, 1),
-                    revisedColor.substr(1, 1),
-                    revisedColor.substr(2, 1),
-                    revisedColor.substr(3, 1)
-                );
-            case 6:
-                return std::format("FF{}", revisedColor);
-            case 8:
-                return std::format("{}{}", revisedColor.substr(6), revisedColor.substr(0, 6));
-            default:
-                return std::string{revisedColor};
+            if(used)
+                continue;
+
+            std::string keyString{key};
+            if(auto iter = vscTokenFallback.find(keyString); iter != vscTokenFallback.end())
+            {
+                auto const& fallbackToken = iter->second;
+                if(fallbackToken == "foreground")
+                {
+                    if(auto iter = colors.Get().find("foreground"); iter != colors.Get().end())
+                    {
+                        if(auto scopeMappingIter = scopeMappings.find(keyString); scopeMappingIter != scopeMappings.end())
+                        {
+
+                        }
+                    }
+                }
+            }
         }
+        return colorCategories;
     }
 
     static void writeColor(
@@ -242,9 +319,9 @@ namespace ThemeConverterCppLib
     {
         writer << std::format(R"(            <Color Name="{}">)", colorKeyName);
         if (foregroundColor)
-            writer << std::format(R"(                <Background Type="CT_RAW" Source="{}"/>)", reviseColor(*backgroundColor));
+            writer << std::format(R"(                <Background Type="CT_RAW" Source="{}"/>)", ReviseColor(*backgroundColor));
         if (backgroundColor)
-            writer << std::format(R"(                <Foreground Type="CT_RAW" Source="{}"/>)", reviseColor(*foregroundColor));
+            writer << std::format(R"(                <Foreground Type="CT_RAW" Source="{}"/>)", ReviseColor(*foregroundColor));
         writer << "            </Color>";
     }
 
