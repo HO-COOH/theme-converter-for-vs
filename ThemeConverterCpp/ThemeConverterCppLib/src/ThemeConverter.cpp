@@ -12,6 +12,7 @@
 #include "VSCode/TokenMapping.h"
 #include "VSCode/TokenFallback.h"
 #include "VS/VSTokens.h"
+#include "VS/OverlayMapping.h"
 #include <uuid_parse.hpp>
 #include "ColorUtils.h"
 
@@ -253,8 +254,8 @@ namespace ThemeConverterCppLib
             return std::pair{std::string_view{mapping.first}, false};
         }));
 
-
-        if(auto tokenColors = themeFile.TokenColors())
+        auto tokenColors = themeFile.TokenColors();
+        if(tokenColors)
         {
             for(auto&& ruleContract : tokenColors)
             {
@@ -300,12 +301,74 @@ namespace ThemeConverterCppLib
                 {
                     if(auto iter = colors.Get().find("foreground"); iter != colors.Get().end())
                     {
-                        if(auto scopeMappingIter = scopeMappings.find(keyString); scopeMappingIter != scopeMappings.end())
+                        if(auto colorKeys = tryGetValue(keyString, scopeMappings))
                         {
-
+                            assignShellColor(
+                                themeFile,
+                                iter->get<std::string>(),
+                                *colorKeys,
+                                colorCategories
+                            );
                         }
                     }
                 }
+                
+                if(tokenColors)
+                {
+                    for(auto&& ruleContract : themeFile.TokenColors())
+                    {
+                        for(auto&& scopeName : ruleContract.Scope())
+                        {
+                            for(auto iter = boost::make_split_iterator(scopeName, boost::token_finder(boost::is_any_of(","))); !iter.eof(); ++iter)
+                            {
+                                auto&& range = *iter;
+                                std::string scope{range.begin(), range.end()};
+                                boost::trim(scope);
+                                if(!scope.empty() && fallbackToken.starts_with(scope))
+                                {
+                                    if(auto colorKeys = tryGetValue(keyString, scopeMappings))
+                                    {
+                                        assignEditorColors(
+                                            *colorKeys,
+                                            scope,
+                                            ruleContract,
+                                            colorCategories,
+                                            assignBy
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //Add the shell colors
+        auto overlayMapping = nlohmann::json::parse(VS::OverlayMapping);
+        for(auto&& color : colors.Get().items())
+        {
+            auto colorKey = color.key();
+            if(auto colorKeyList = tryGetValue(boost::trim_copy(colorKey), scopeMappings))
+            {
+                auto colorValue = tryGetColorValue(colors, colorKey);
+                if(!colorValue)
+                    continue;
+
+                if(auto item = overlayMapping.find(colorKey); item != overlayMapping.end())
+                {
+                    if(auto backgroundColor = tryGetColorValue(colors, item->at("Item2")))
+                    {
+                        colorValue = GetCompoundColor(*colorValue, *backgroundColor, item->at("Item1").get<float>());
+                    }
+                }
+
+                assignShellColor(
+                    themeFile,
+                    *colorValue,
+                    *colorKeyList,
+                    colorCategories
+                );
             }
         }
         return colorCategories;
@@ -356,7 +419,7 @@ namespace ThemeConverterCppLib
                 if(foreground || background)
                     writeColor(outputFile, key, foreground, background);
             }
-            outputFile << R"(        </Category>)";
+            outputFile << "        </Category>\n";
             
         }
         

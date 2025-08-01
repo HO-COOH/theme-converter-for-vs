@@ -246,24 +246,24 @@ namespace ThemeConverter
             }
 
             // Add the shell colors
-            //foreach (var color in theme.Colors)
-            //{
-            //    if (ScopeMappings.Value.TryGetValue(color.Key.Trim(), out var colorKeyList))
-            //    {
-            //        if (!TryGetColorValue(theme, color.Key, out string? colorValue))
-            //        {
-            //            continue;
-            //        }
+            foreach (var color in theme.Colors)
+            {
+                if (ScopeMappings.Value.TryGetValue(color.Key.Trim(), out var colorKeyList))
+                {
+                    if (!TryGetColorValue(theme, color.Key, out string? colorValue))
+                    {
+                        continue;
+                    }
 
-            //        // calculate the actual border color for editor overlay colors
-            //        if (OverlayMappings.Value.ContainsKey(color.Key) && TryGetColorValue(theme, OverlayMappings.Value[color.Key].Item2, out string? backgroundColor))
-            //        {
-            //            colorValue = GetCompoundColor(colorValue!, backgroundColor!, VSOpacity: OverlayMappings.Value[color.Key].Item1);
-            //        }
+                    // calculate the actual border color for editor overlay colors
+                    if (OverlayMappings.Value.ContainsKey(color.Key) && TryGetColorValue(theme, OverlayMappings.Value[color.Key].Item2, out string? backgroundColor))
+                    {
+                        colorValue = GetCompoundColor(colorValue!, backgroundColor!, VSOpacity: OverlayMappings.Value[color.Key].Item1);
+                    }
 
-            //        AssignShellColors(theme, colorValue!, colorKeyList, ref colorCategories);
-            //    }
-            //}
+                    AssignShellColors(theme, colorValue!, colorKeyList, ref colorCategories);
+                }
+            }
 
             return colorCategories;
         }

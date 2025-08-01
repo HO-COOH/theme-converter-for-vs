@@ -25,7 +25,7 @@ namespace ThemeConverterCppLib::VSCode
 
     Theme::Colors_ Theme::Colors() const
     {
-        return m_json["color"];
+        return m_json["colors"];
     }
 
     bool Theme::SemanticHighlighting() const
